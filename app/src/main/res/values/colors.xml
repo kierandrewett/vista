@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Day (default): light & bright for projector readability. -night overrides to dark. -->
+    <color name="vista_window_background">#F4F6FB</color>
+    <color name="vista_banner_bg">#10131C</color>
+    <color name="vista_accent">#6E9BFF</color>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 320x180 leanback banner. Simple wordmark "V" on a deep gradient. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#10131C"
+        android:pathData="M0,0 H320 V180 H0 Z" />
+    <!-- accent V -->
+    <path
+        android:fillColor="#6E9BFF"
+        android:pathData="M126,58 L160,118 L194,58 L178,58 L160,90 L142,58 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M150,128 h20 v6 h-20 z" />
+</vector>
