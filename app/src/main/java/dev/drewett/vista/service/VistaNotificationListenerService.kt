@@ -38,9 +38,9 @@ class VistaNotificationListenerService : NotificationListenerService() {
     private fun toItem(sbn: StatusBarNotification): NotificationItem? {
         if (sbn.packageName == packageName) return null
         val extras = sbn.notification?.extras ?: return null
-        val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.takeIf { it.isNotBlank() }
+        val title = plain(extras.getCharSequence(Notification.EXTRA_TITLE)).takeIf { it.isNotBlank() }
             ?: return null
-        val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString().orEmpty()
+        val text = plain(extras.getCharSequence(Notification.EXTRA_TEXT))
         return NotificationItem(
             key = sbn.key,
             packageName = sbn.packageName,
@@ -48,5 +48,16 @@ class VistaNotificationListenerService : NotificationListenerService() {
             text = text,
             postTime = sbn.postTime,
         )
+    }
+
+    /** Strip any HTML markup some apps embed in notification text (e.g. <font bgcolor=…>). */
+    private fun plain(cs: CharSequence?): String {
+        val s = cs?.toString()?.trim().orEmpty()
+        return if ('<' in s && '>' in s) {
+            androidx.core.text.HtmlCompat.fromHtml(s, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+                .toString().trim()
+        } else {
+            s
+        }
     }
 }

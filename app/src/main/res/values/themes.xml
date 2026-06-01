@@ -8,4 +8,12 @@
         <item name="android:windowFullscreen">false</item>
         <item name="android:windowActionBar">false</item>
     </style>
+
+    <!-- Transparent host for the quick-settings overlay activity. -->
+    <style name="Theme.Vista.Transparent" parent="@android:style/Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
 </resources>

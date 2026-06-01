@@ -91,8 +91,12 @@ private fun PanelContent(themeMode: ThemeMode, onCycleTheme: () -> Unit, onDismi
     LaunchedEffect(Unit) { runCatching { firstTile.requestFocus() } }
 
     val audioRepository = remember { dev.drewett.vista.data.system.AudioRepository(context) }
+    val systemRepository = remember { dev.drewett.vista.data.system.SystemRepository(context) }
+    val wifiName = remember { systemRepository.wifiSsid() }
     var showAudio by remember { mutableStateOf(false) }
     var outputs by remember { mutableStateOf<List<dev.drewett.vista.data.system.AudioOutput>>(emptyList()) }
+    var showBt by remember { mutableStateOf(false) }
+    var btDevices by remember { mutableStateOf<List<dev.drewett.vista.data.system.BtDevice>>(emptyList()) }
 
     fun open(action: String) {
         runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -113,30 +117,35 @@ private fun PanelContent(themeMode: ThemeMode, onCycleTheme: () -> Unit, onDismi
         Text(timeLine(), style = MaterialTheme.typography.displayLarge, color = MaterialTheme.colorScheme.onSurface)
 
         Tile("Theme", themeMode.label, R.drawable.ic_theme, Modifier.fillMaxWidth().focusRequester(firstTile), onClick = onCycleTheme)
+        Tile("Wi-Fi", wifiName ?: "Open", R.drawable.ic_wifi, Modifier.fillMaxWidth()) { open(Settings.ACTION_WIFI_SETTINGS) }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            GridTile("Wi-Fi", R.drawable.ic_wifi) { open(Settings.ACTION_WIFI_SETTINGS) }
-            GridTile("Bluetooth", R.drawable.ic_bluetooth) { open(Settings.ACTION_BLUETOOTH_SETTINGS) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            GridTile("Bluetooth", R.drawable.ic_bluetooth) {
+                btDevices = systemRepository.bluetoothDevices()
+                showBt = !showBt
+            }
             GridTile("Audio output", R.drawable.ic_audio) {
                 outputs = audioRepository.outputs()
                 showAudio = !showAudio
             }
-            GridTile("Display", R.drawable.ic_display) { open(Settings.ACTION_DISPLAY_SETTINGS) }
+        }
+        if (showBt) {
+            SubHeader("Bluetooth devices")
+            if (btDevices.isEmpty()) {
+                Hint("No paired devices. Pair one in Bluetooth settings.")
+            } else {
+                btDevices.forEach { device ->
+                    Tile(device.name, if (device.connected) "Connected" else "Saved", R.drawable.ic_bluetooth, Modifier.fillMaxWidth()) {
+                        open(Settings.ACTION_BLUETOOTH_SETTINGS)
+                    }
+                }
+            }
+            Tile("Bluetooth settings", "Open", R.drawable.ic_bluetooth, Modifier.fillMaxWidth()) { open(Settings.ACTION_BLUETOOTH_SETTINGS) }
         }
         if (showAudio) {
-            Text(
-                "Audio output",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
+            SubHeader("Audio output")
             if (outputs.isEmpty()) {
-                Text(
-                    "Only the default output is available. Connect a Bluetooth device to switch.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
+                Hint("Only the default output is available. Connect a Bluetooth device to switch.")
             } else {
                 outputs.forEach { out ->
                     Tile(out.name, if (out.selected) "●" else "○", R.drawable.ic_audio, Modifier.fillMaxWidth()) {
@@ -147,15 +156,16 @@ private fun PanelContent(themeMode: ThemeMode, onCycleTheme: () -> Unit, onDismi
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            GridTile("Display", R.drawable.ic_display) { open(Settings.ACTION_DISPLAY_SETTINGS) }
             GridTile("Accessibility", R.drawable.ic_accessibility) { open(Settings.ACTION_ACCESSIBILITY_SETTINGS) }
-            GridTile("Screensaver", R.drawable.ic_screensaver) { open("android.settings.DREAM_SETTINGS") }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            GridTile("Screensaver", R.drawable.ic_screensaver) { open("android.settings.DREAM_SETTINGS") }
             GridTile("Date & time", R.drawable.ic_clock) { open(Settings.ACTION_DATE_SETTINGS) }
-            GridTile("Reload", R.drawable.ic_reload) {
-                (context as? android.app.Activity)?.recreate()
-                onDismiss()
-            }
+        }
+        Tile("Reload Vista", "", R.drawable.ic_reload, Modifier.fillMaxWidth()) {
+            (context as? android.app.Activity)?.recreate()
+            onDismiss()
         }
         Tile("All settings", "Open", R.drawable.ic_settings, Modifier.fillMaxWidth()) { open(Settings.ACTION_SETTINGS) }
 
@@ -199,6 +209,16 @@ private fun PanelContent(themeMode: ThemeMode, onCycleTheme: () -> Unit, onDismi
 private fun appVersion(context: android.content.Context): String = runCatching {
     context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
 }.getOrDefault("")
+
+@Composable
+private fun SubHeader(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+}
+
+@Composable
+private fun Hint(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+}
 
 @Composable
 private fun RowScope.GridTile(label: String, iconRes: Int, onClick: () -> Unit) {
