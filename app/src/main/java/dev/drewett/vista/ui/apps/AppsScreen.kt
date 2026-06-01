@@ -17,6 +17,7 @@ import dev.drewett.vista.ui.components.AppCard
 fun AppsScreen(
     apps: List<AppEntry>,
     onLaunch: (AppEntry) -> Unit,
+    onLongPress: (AppEntry) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
@@ -28,7 +29,7 @@ fun AppsScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         items(apps, key = { it.packageName }) { app ->
-            AppCard(entry = app, onClick = { onLaunch(app) })
+            AppCard(entry = app, onClick = { onLaunch(app) }, onLongClick = { onLongPress(app) })
         }
     }
 }

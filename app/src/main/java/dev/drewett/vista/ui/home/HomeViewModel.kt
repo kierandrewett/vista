@@ -108,6 +108,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openAppInfo(packageName: String) = appRepository.openAppInfo(packageName)
 
+    fun uninstall(packageName: String) = appRepository.uninstall(packageName)
+
     fun toggleFavourite(entry: AppEntry) {
         viewModelScope.launch { favouritesRepository.toggle(entry.packageName) }
     }

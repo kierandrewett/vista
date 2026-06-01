@@ -18,6 +18,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import dev.drewett.vista.ui.VistaSignals
 import dev.drewett.vista.ui.apps.AppsScreen
+import dev.drewett.vista.ui.components.AppContextMenu
 import dev.drewett.vista.ui.content.ContentGrid
 import dev.drewett.vista.ui.content.LibraryScreen
 import dev.drewett.vista.ui.content.SearchScreen
@@ -37,6 +38,7 @@ fun HomeScreen(
 
     var tab by remember { mutableStateOf(VistaTab.FOR_YOU) }
     var searchOpen by remember { mutableStateOf(false) }
+    var menuApp by remember { mutableStateOf<dev.drewett.vista.domain.AppEntry?>(null) }
     val topBarFocus = remember { FocusRequester() }
     val resetSignal by VistaSignals.reset.collectAsStateWithLifecycle()
 
@@ -57,14 +59,18 @@ fun HomeScreen(
                     favourites = favouritesSet,
                     onLaunch = viewModel::launch,
                     onLaunchContent = viewModel::launchContent,
-                    onToggleFavourite = viewModel::toggleFavourite,
+                    onAppLongPress = { menuApp = it },
                     topBarFocus = topBarFocus,
                     resetSignal = resetSignal,
                 )
 
             VistaTab.MOVIES -> ContentGrid("Movies", movies, viewModel::launchContent)
             VistaTab.SHOWS -> ContentGrid("Shows", shows, viewModel::launchContent)
-            VistaTab.APPS -> if (apps.isEmpty()) Loading() else AppsScreen(apps = apps, onLaunch = viewModel::launch)
+            VistaTab.APPS -> if (apps.isEmpty()) Loading() else AppsScreen(
+                apps = apps,
+                onLaunch = viewModel::launch,
+                onLongPress = { menuApp = it },
+            )
             VistaTab.LIBRARY -> LibraryScreen(
                 favourites = favouriteApps,
                 continueWatching = continueWatching,
@@ -91,6 +97,16 @@ fun HomeScreen(
                 onDismiss = { searchOpen = false },
             )
         }
+
+        AppContextMenu(
+            app = menuApp,
+            isFavourite = menuApp?.packageName in favouritesSet,
+            onDismiss = { menuApp = null },
+            onOpen = viewModel::launch,
+            onToggleFavourite = viewModel::toggleFavourite,
+            onAppInfo = viewModel::openAppInfo,
+            onUninstall = viewModel::uninstall,
+        )
     }
 }
 

@@ -148,7 +148,14 @@ private fun PanelContent(themeMode: ThemeMode, onCycleTheme: () -> Unit, onDismi
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GridTile("Accessibility", R.drawable.ic_accessibility) { open(Settings.ACTION_ACCESSIBILITY_SETTINGS) }
+            GridTile("Screensaver", R.drawable.ic_screensaver) { open("android.settings.DREAM_SETTINGS") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             GridTile("Date & time", R.drawable.ic_clock) { open(Settings.ACTION_DATE_SETTINGS) }
+            GridTile("Reload", R.drawable.ic_reload) {
+                (context as? android.app.Activity)?.recreate()
+                onDismiss()
+            }
         }
         Tile("All settings", "Open", R.drawable.ic_settings, Modifier.fillMaxWidth()) { open(Settings.ACTION_SETTINGS) }
 
@@ -179,8 +186,19 @@ private fun PanelContent(themeMode: ThemeMode, onCycleTheme: () -> Unit, onDismi
                 }
             }
         }
+
+        Text(
+            "Vista ${appVersion(context)}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+            modifier = Modifier.padding(top = 16.dp),
+        )
     }
 }
+
+private fun appVersion(context: android.content.Context): String = runCatching {
+    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+}.getOrDefault("")
 
 @Composable
 private fun RowScope.GridTile(label: String, iconRes: Int, onClick: () -> Unit) {

@@ -84,4 +84,15 @@ class AppRepository(private val context: Context) {
         }
         runCatching { context.startActivity(intent) }
     }
+
+    /** Launch the system uninstall confirmation for an app. */
+    fun uninstall(packageName: String) {
+        @Suppress("DEPRECATION")
+        val intent = Intent(Intent.ACTION_UNINSTALL_PACKAGE).apply {
+            data = android.net.Uri.fromParts("package", packageName, null)
+            putExtra(Intent.EXTRA_RETURN_RESULT, false)
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        runCatching { context.startActivity(intent) }
+    }
 }
