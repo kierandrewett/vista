@@ -1,127 +1,118 @@
 # Vista
 
-A custom home-screen launcher for Android TV / Google TV, built because the stock Google TV
-launcher is slow, ad-laden, and dark-only — which is miserable on a **projector in daylight**.
-Vista is fast, adapts light/dark for the room, and surfaces your real content instead of sponsored rows.
+A home-screen launcher for Android TV and Google TV, written in Kotlin with Jetpack Compose for TV.
 
-Written in Kotlin with Jetpack Compose for TV. Targets API 34, runs on a 1 GB-RAM Google TV stick.
+Vista replaces the stock launcher with a faster, ad-free home screen that adapts its theme to the
+room and surfaces content from the apps already installed on the device. It was written for a
+projector that is unreadable under the stock dark-only interface in daylight.
 
-![Vista home](docs/screenshots/home.png)
+![Home](docs/screenshots/home.png)
 
-## Why it exists
+## Overview
 
-The launcher that ships on these sticks pushes "sponsored" content and a fixed dark theme. On a
-projector that washes out in daylight, the dark UI is unreadable. Vista was built to fix that
-specific problem and grew into a full launcher:
+Vista is built around three goals:
 
-- **Adaptive theme** — light & bright by day for projector readability, dark & cinematic at night.
-- **Real content, no ads** — Continue Watching, per-app content rows, Movies/Shows, all from the
-  apps you actually use.
-- **No account, no telemetry** — it reads the device, nothing leaves it.
+- **Readability.** The theme follows the system day/night state — light during the day for projector
+  use, dark at night.
+- **Relevant content.** Continue Watching, per-app content rows, and a Movies/Shows library are read
+  directly from the device's TV provider, with no recommendation feed and no advertising.
+- **No external dependencies.** Vista reads only local state. It requires no account and sends
+  nothing off the device.
+
+Targets API 34 and runs on a 1 GB-RAM Google TV stick.
 
 ## Features
 
-- **Tabs:** For you · Movies · Shows · Apps · Library, plus Search — an Apple-TV-style segmented
-  control with an animated selector.
-- **Immersive hero** that updates as you move focus, with a blurred backdrop, full (non-truncated)
-  titles, descriptions, season/episode and time-left.
-- **Continue Watching** and per-app content rows ("On YouTube", "On Prime Video", …) pulled from the
-  TV provider — real posters with deep-link launch into the source app.
-- **Fixed focus ring** — the ring stays pinned at the left while the row slides under it, and moves
-  with the card once the row can't scroll further (Apple-/Google-TV behaviour).
-- **Jump back in** from Vista's own launch history (no system usage-access dependency).
-- **Favourites** — long-press an app to pin it.
-- **Apps grid** including sideloaded apps the stock launcher hides.
-- **Quick-settings dashboard** on the MENU / Settings button: theme toggle, Wi-Fi/Bluetooth/Display/
-  Accessibility/Date deep-links, a MediaRouter **audio-output switcher**, and live notifications.
-- **Notification overlays** over other apps while you're watching.
-- **Search** with on-screen keyboard, live-filtering apps and content.
+- Tabbed navigation — For you, Movies, Shows, Apps, Library — with a segmented selector and
+  integrated search.
+- An immersive hero that follows focus, showing artwork, synopsis, season/episode, and remaining
+  runtime.
+- Continue Watching and per-provider content rows sourced from `TvContractCompat`, each launched
+  through the publishing app's own deep link.
+- A fixed focus indicator: the selection stays at a fixed position while the row scrolls beneath it,
+  and follows the card once the row reaches its end.
+- Recently launched apps, pinned favourites, and a full application grid that includes sideloaded
+  apps the stock launcher omits.
+- A quick-settings panel on the MENU button: theme control, system shortcuts, a MediaRouter
+  audio-output selector, and live notifications.
+- Notification overlays presented over foreground apps.
 
 ## Screenshots
 
-| Home | Movies | Quick settings | Search |
-|---|---|---|---|
-| ![Home](docs/screenshots/home.png) | ![Movies](docs/screenshots/movies.png) | ![Quick settings](docs/screenshots/quick-settings.png) | ![Search](docs/screenshots/search.png) |
+| Home | Movies | Quick settings |
+| --- | --- | --- |
+| ![Home](docs/screenshots/home.png) | ![Movies](docs/screenshots/movies.png) | ![Quick settings](docs/screenshots/quick-settings.png) |
 
-## How it works (the interesting bit)
+## Implementation notes
 
-A few things a sideloaded launcher supposedly *can't* do, that Vista does:
+- **Content rows.** Reading another application's published channels and programs requires
+  `android.permission.READ_TV_LISTINGS`. The permission is `dangerous` rather than signature-level,
+  so it can be granted with `pm grant`. Vista queries `WatchNextPrograms` and `PreviewPrograms` and
+  renders posters using each entry's `COLUMN_INTENT_URI`. The system-aggregated watch-next table
+  requires `ACCESS_ALL_EPG_DATA` (signature/privileged) and is not used.
+- **Recently used.** Google TV does not return `UsageStatsManager` data to third-party launchers, so
+  "Jump back in" is derived from Vista's own launch history, persisted with DataStore.
+- **Icons.** Application icons are loaded at `DENSITY_XXXHIGH` to stay sharp at large and circular
+  sizes.
 
-- **Cross-app Continue Watching.** Reading other apps' published channels/programs requires
-  `android.permission.READ_TV_LISTINGS`, which is `protectionLevel="dangerous"` — i.e. grantable with
-  `pm grant`. Vista reads `TvContractCompat.WatchNextPrograms` and `PreviewPrograms` and renders real
-  posters with the publisher's own `COLUMN_INTENT_URI` deep-link. The only thing genuinely locked is
-  the system-aggregated watch-next table (`ACCESS_ALL_EPG_DATA`, signature/privileged), which we
-  don't need — we read the per-app channels directly.
-- **"Jump back in"** uses Vista's own launch history (a DataStore list), because Google TV withholds
-  `UsageStatsManager` data from third-party launchers — queries come back empty even with the
-  permission granted.
-- **Quality app art** is loaded at `DENSITY_XXXHIGH` so icons stay crisp at large/circular sizes.
+## Building
 
-## Build
-
-Prerequisites: **JDK 17**, the **Android SDK** (platform 34 + build-tools 34.0.0), and `adb`.
+Requires JDK 17, the Android SDK (platform 34, build-tools 34.0.0) and `adb`.
 
 ```bash
 git clone https://github.com/kierandrewett/vista.git
 cd vista
-# point Gradle at your SDK (or set ANDROID_HOME)
-echo "sdk.dir=$HOME/Android/Sdk" > local.properties
+echo "sdk.dir=$HOME/Android/Sdk" > local.properties   # or set ANDROID_HOME
 ./gradlew :app:assembleRelease
 ```
 
-Use the **release** build on-device — it's non-debuggable and dramatically smoother than debug on
-low-RAM TV hardware. It's signed with the debug key so it installs without extra setup. The APK
-lands at `app/build/outputs/apk/release/app-release.apk`. CI builds it on every push (see Actions).
+The release variant is non-debuggable and noticeably smoother than debug on low-memory hardware. It
+is signed with the debug key so it installs without additional configuration. The APK is produced at
+`app/build/outputs/apk/release/app-release.apk`, and is also built and uploaded as an artifact by
+GitHub Actions on every push.
 
-## Install on a device
+## Installation
 
-Enable **Wireless debugging** on the TV (Settings → System → Developer options), then:
+Enable Wireless debugging on the device, then:
 
 ```bash
-adb connect <tv-ip>:<port>
+adb connect <device-ip>:<port>
 adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
-Vista works out of the box, but a few capabilities need permissions a launcher can't request at
-runtime. Grant them once over adb:
+Several capabilities depend on permissions a launcher cannot request at runtime. Grant them once
+over adb:
 
 ```bash
-P=dev.drewett.vista
-# real Continue Watching / content rows
-adb shell pm grant $P android.permission.READ_TV_LISTINGS
-# notification overlays + quick-settings notifications
-adb shell appops set $P SYSTEM_ALERT_WINDOW allow
-adb shell cmd notification allow_listener $P/$P.service.VistaNotificationListenerService
-# make Vista the home screen
-adb shell cmd role add-role-holder android.app.role.HOME $P
+PKG=dev.drewett.vista
+adb shell pm grant $PKG android.permission.READ_TV_LISTINGS                  # content rows
+adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow                          # notification overlays
+adb shell cmd notification allow_listener $PKG/$PKG.service.VistaNotificationListenerService
+adb shell cmd role add-role-holder android.app.role.HOME $PKG               # set as home screen
 ```
 
-Press **Home** and Vista takes over. To revert: `adb shell cmd role add-role-holder android.app.role.HOME <other-launcher>`.
+Pressing Home then opens Vista. To restore the previous launcher, reassign the `HOME` role.
 
 ## Architecture
 
-Single module, `dev.drewett.vista`:
+A single Gradle module under `dev.drewett.vista`:
 
-- `data/` — repositories: `AppRepository` (PackageManager/LauncherApps), `ChannelsRepository`
-  (TvProvider), `UsageRepository` + `LaunchHistoryRepository`, `FavouritesRepository`,
-  `SettingsRepository`, `AudioRepository` (MediaRouter), `AccountRepository`.
-- `domain/` — immutable models (`AppEntry`, `ContentCard`, `HomeSection`, `Spotlight`).
-- `ui/` — Compose for TV: `home/` (tab shell, immersive hero, rows), `content/` (grids, library,
-  search), `quicksettings/`, `components/` (cards, focus handling).
-- `service/` — `VistaNotificationListenerService` + the over-app overlay.
+- `data/` — repositories over PackageManager/LauncherApps, the TV provider, usage and launch
+  history, favourites, settings, and MediaRouter.
+- `domain/` — immutable UI models.
+- `ui/` — Compose for TV: the tab shell and immersive home, content grids, search, the
+  quick-settings panel, and shared components.
+- `service/` — the notification listener and over-app overlay.
 
-## Limitations (honest)
+## Limitations
 
-- The **aggregated** system "Watch Next" row is privileged; Vista builds its own from per-app
-  channels, so coverage depends on which apps publish them.
-- The **Google account avatar** isn't readable by a third-party app (account visibility is blocked
-  since Android 8), so there's no avatar.
-- **Audio-output switching** uses MediaRouter; on devices where the system only exposes the default
-  route, only that route appears.
-- adb-granted permissions are **per-device** — a clean install elsewhere falls back to deep-linking
-  into system Settings.
+- The aggregated system "Watch Next" row is privileged; Vista reconstructs it from per-app channels,
+  so coverage depends on which apps publish them.
+- Account avatars are not exposed to third-party applications, so none is shown.
+- Audio-output switching relies on MediaRouter; only routes the system exposes are selectable.
+- adb-granted permissions are per-device. Without them, the corresponding tiles fall back to opening
+  system Settings.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+[MIT](LICENSE).
