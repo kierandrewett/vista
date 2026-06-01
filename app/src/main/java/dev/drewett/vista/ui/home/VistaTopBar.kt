@@ -31,6 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -73,6 +78,7 @@ fun VistaTopBar(
     onOpenSearch: () -> Unit,
     modifier: Modifier = Modifier,
     barFocusRequester: FocusRequester? = null,
+    contentFocus: FocusRequester? = null,
 ) {
     val scrim = MaterialTheme.colorScheme.background
     Box(
@@ -82,7 +88,21 @@ fun VistaTopBar(
             .background(Brush.verticalGradient(0f to scrim.copy(alpha = 0.9f), 1f to Color.Transparent)),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp, vertical = 22.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 40.dp, vertical = 22.dp)
+                .focusGroup()
+                // Pressing down from any bar item enters the active screen's content.
+                .onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown &&
+                        event.key == Key.DirectionDown &&
+                        contentFocus != null
+                    ) {
+                        runCatching { contentFocus.requestFocus(); true }.getOrDefault(false)
+                    } else {
+                        false
+                    }
+                },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SegmentedTabs(selected = selected, onSelect = onSelect, barFocusRequester = barFocusRequester)

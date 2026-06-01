@@ -105,6 +105,7 @@ fun HomeTab(
     onLaunchContent: (ContentCard) -> Unit,
     onAppLongPress: (AppEntry) -> Unit,
     topBarFocus: FocusRequester,
+    contentFocus: FocusRequester,
     resetSignal: Int,
     modifier: Modifier = Modifier,
 ) {
@@ -128,6 +129,7 @@ fun HomeTab(
                 onLaunchContent = onLaunchContent,
                 onAppLongPress = onAppLongPress,
                 topBarFocus = topBarFocus,
+                contentFocus = contentFocus,
                 resetSignal = resetSignal,
                 modifier = Modifier.height(330.dp),
             )
@@ -223,10 +225,11 @@ private fun SectionsList(
     onLaunchContent: (ContentCard) -> Unit,
     onAppLongPress: (AppEntry) -> Unit,
     topBarFocus: FocusRequester,
+    contentFocus: FocusRequester,
     resetSignal: Int,
     modifier: Modifier = Modifier,
 ) {
-    val firstItem = remember { FocusRequester() }
+    val firstItem = contentFocus
     var focusedRow by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
     val density = androidx.compose.ui.platform.LocalDensity.current

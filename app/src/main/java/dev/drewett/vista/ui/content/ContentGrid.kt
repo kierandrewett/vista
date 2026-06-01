@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -29,6 +31,7 @@ fun ContentGrid(
     onLaunch: (ContentCard) -> Unit,
     modifier: Modifier = Modifier,
     emptyMessage: String = "Nothing here yet",
+    contentFocus: androidx.compose.ui.focus.FocusRequester? = null,
 ) {
     Column(modifier.fillMaxSize().padding(top = 96.dp)) {
         Text(
@@ -55,11 +58,12 @@ fun ContentGrid(
                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                items(items, key = { it.id }) { card ->
+                itemsIndexed(items, key = { _, it -> it.id }) { index, card ->
                     ContentCardView(
                         card = card,
                         onClick = { onLaunch(card) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth()
+                            .then(if (index == 0 && contentFocus != null) Modifier.focusRequester(contentFocus) else Modifier),
                         aspectRatio = aspect,
                     )
                 }

@@ -40,6 +40,7 @@ fun HomeScreen(
     var searchOpen by remember { mutableStateOf(false) }
     var menuApp by remember { mutableStateOf<dev.drewett.vista.domain.AppEntry?>(null) }
     val topBarFocus = remember { FocusRequester() }
+    val contentFocus = remember { FocusRequester() }
     val resetSignal by VistaSignals.reset.collectAsStateWithLifecycle()
 
     LaunchedEffect(resetSignal) {
@@ -61,21 +62,24 @@ fun HomeScreen(
                     onLaunchContent = viewModel::launchContent,
                     onAppLongPress = { menuApp = it },
                     topBarFocus = topBarFocus,
+                    contentFocus = contentFocus,
                     resetSignal = resetSignal,
                 )
 
-            VistaTab.MOVIES -> ContentGrid("Movies", movies, viewModel::launchContent)
-            VistaTab.SHOWS -> ContentGrid("Shows", shows, viewModel::launchContent)
+            VistaTab.MOVIES -> ContentGrid("Movies", movies, viewModel::launchContent, contentFocus = contentFocus)
+            VistaTab.SHOWS -> ContentGrid("Shows", shows, viewModel::launchContent, contentFocus = contentFocus)
             VistaTab.APPS -> if (apps.isEmpty()) Loading() else AppsScreen(
                 apps = apps,
                 onLaunch = viewModel::launch,
                 onLongPress = { menuApp = it },
+                contentFocus = contentFocus,
             )
             VistaTab.LIBRARY -> LibraryScreen(
                 favourites = favouriteApps,
                 continueWatching = continueWatching,
                 onLaunchApp = viewModel::launch,
                 onLaunchContent = viewModel::launchContent,
+                contentFocus = contentFocus,
             )
         }
 
@@ -86,6 +90,7 @@ fun HomeScreen(
             onOpenSearch = { searchOpen = true },
             modifier = Modifier.align(Alignment.TopStart),
             barFocusRequester = topBarFocus,
+            contentFocus = contentFocus,
         )
 
         if (searchOpen) {

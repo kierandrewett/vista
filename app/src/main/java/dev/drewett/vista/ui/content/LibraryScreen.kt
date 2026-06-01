@@ -8,12 +8,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -30,6 +31,7 @@ fun LibraryScreen(
     onLaunchApp: (AppEntry) -> Unit,
     onLaunchContent: (ContentCard) -> Unit,
     modifier: Modifier = Modifier,
+    contentFocus: androidx.compose.ui.focus.FocusRequester? = null,
 ) {
     if (favourites.isEmpty() && continueWatching.isEmpty()) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -62,8 +64,12 @@ fun LibraryScreen(
                 contentPadding = PaddingValues(horizontal = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                items(continueWatching, key = { it.id }) { card ->
-                    ContentCardView(card, { onLaunchContent(card) }, Modifier.width(232.dp))
+                itemsIndexed(continueWatching, key = { _, it -> it.id }) { index, card ->
+                    ContentCardView(
+                        card, { onLaunchContent(card) },
+                        Modifier.width(232.dp)
+                            .then(if (index == 0 && contentFocus != null) Modifier.focusRequester(contentFocus) else Modifier),
+                    )
                 }
             }
         }
@@ -73,8 +79,12 @@ fun LibraryScreen(
                 contentPadding = PaddingValues(horizontal = 48.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                items(favourites, key = { it.packageName }) { app ->
-                    AppCard(app, { onLaunchApp(app) }, Modifier.width(232.dp))
+                itemsIndexed(favourites, key = { _, it -> it.packageName }) { index, app ->
+                    AppCard(
+                        app, { onLaunchApp(app) },
+                        Modifier.width(232.dp)
+                            .then(if (index == 0 && continueWatching.isEmpty() && contentFocus != null) Modifier.focusRequester(contentFocus) else Modifier),
+                    )
                 }
             }
         }
