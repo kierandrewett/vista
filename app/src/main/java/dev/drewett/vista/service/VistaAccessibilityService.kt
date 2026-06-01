@@ -16,6 +16,7 @@ class VistaAccessibilityService : AccessibilityService() {
     override fun onInterrupt() = Unit
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
+        android.util.Log.i("VistaKey", "keyCode=${event.keyCode} (${KeyEvent.keyCodeToString(event.keyCode)}) action=${event.action}")
         if (event.keyCode == KeyEvent.KEYCODE_SETTINGS) {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 runCatching {

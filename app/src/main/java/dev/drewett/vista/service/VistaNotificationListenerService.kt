@@ -13,17 +13,30 @@ import dev.drewett.vista.domain.NotificationItem
 class VistaNotificationListenerService : NotificationListenerService() {
 
     private val overlay by lazy { NotificationOverlay(this) }
+    private var lastOverlayKey: String? = null
 
     override fun onListenerConnected() = refresh()
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         refresh()
         sbn ?: return
-        // Only pop a card over OTHER apps, and skip ongoing/media notifications.
-        if (VistaForeground.isForeground || sbn.isOngoing) return
+        if (VistaForeground.isForeground) return
+        if (!shouldOverlay(sbn)) return
+        if (sbn.key == lastOverlayKey) return // don't re-pop the same notification on each update
         val item = toItem(sbn) ?: return
+        lastOverlayKey = sbn.key
         val icon = runCatching { packageManager.getApplicationIcon(sbn.packageName) }.getOrNull()
         overlay.show(item, icon)
+    }
+
+    /** Skip ongoing, media/transport, and service notifications — only real, dismissible alerts pop up. */
+    private fun shouldOverlay(sbn: StatusBarNotification): Boolean {
+        if (sbn.isOngoing) return false
+        val n = sbn.notification ?: return false
+        if (n.category in SUPPRESSED_CATEGORIES) return false
+        if (n.extras?.containsKey(Notification.EXTRA_MEDIA_SESSION) == true) return false
+        if (n.flags and Notification.FLAG_FOREGROUND_SERVICE != 0) return false
+        return true
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) = refresh()
@@ -50,14 +63,23 @@ class VistaNotificationListenerService : NotificationListenerService() {
         )
     }
 
-    /** Strip any HTML markup some apps embed in notification text (e.g. <font bgcolor=…>). */
+    /** Strip HTML some apps embed (e.g. <font bgcolor=…>) and drop junk placeholders. */
     private fun plain(cs: CharSequence?): String {
-        val s = cs?.toString()?.trim().orEmpty()
-        return if ('<' in s && '>' in s) {
-            androidx.core.text.HtmlCompat.fromHtml(s, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+        var s = cs?.toString()?.trim().orEmpty()
+        if ('<' in s && '>' in s) {
+            s = androidx.core.text.HtmlCompat.fromHtml(s, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
                 .toString().trim()
-        } else {
-            s
         }
+        return if (s.equals("undefined", ignoreCase = true) || s.equals("null", ignoreCase = true)) "" else s
+    }
+
+    private companion object {
+        val SUPPRESSED_CATEGORIES = setOf(
+            Notification.CATEGORY_TRANSPORT,
+            Notification.CATEGORY_PROGRESS,
+            Notification.CATEGORY_SERVICE,
+            Notification.CATEGORY_CALL,
+            Notification.CATEGORY_NAVIGATION,
+        )
     }
 }
